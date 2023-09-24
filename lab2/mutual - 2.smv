@@ -1,0 +1,37 @@
+MODULE main
+    VAR
+        st1 : {n, t, c};
+        st2 : {n, t, c};
+
+    ASSIGN
+        init(st1) := n;
+        next(st1) :=
+            case
+                (st1 = n) : {st1, t};
+                (st1 = t) & (st2 = c) : st1;
+                (st1 = t) & (st2 != c) : {st1, c};
+                (st1 = c) & (st2 = n)  : {st1, n};
+                (st1 = c) & (st2 != n)  : n;
+            esac;
+
+        init(st2) := n;
+        next(st2) :=
+            case
+                (next(st1) = st1) & (st2 = n) : t;
+                (next(st1) = st1) & (st2 = t) & (st1 != c) : c;
+                (next(st1) = st1) & (st2 = c) : n;
+                TRUE : st2;
+            esac;
+
+    -- Safety
+    LTLSPEC G !(st1 = c & st2 = c)
+
+    -- Liveness
+    LTLSPEC G ((st1 = t -> F st1 = c) & (st2 = t -> F st2 = c))
+
+    -- Non-blocking
+    CTLSPEC AG ((st1 = n -> EX st1 = t) & (st2 = n -> EX st2 = t))
+
+    -- No strict sequencing
+    CTLSPEC AG (st1 = c -> E[!(st2 = c) U st1 = c]) | AG (st2 = c -> E[!(st1 = c) U st2 = c])
+
